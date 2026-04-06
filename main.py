@@ -60,12 +60,13 @@ def main(page: ft.Page):
             pass
 
         # --- ÉLÉMENT VISUEL SANS ICÔNE (Zéro risque de crash) ---
+        # Utilisation de ft.Alignment(0,0) au lieu de ft.alignment.center pour compatibilité
         orb = ft.Container(
             content=ft.Text("AI", color=COLOR_BG, weight="bold"),
             bgcolor=COLOR_PRIMARY,
             width=50, height=50,
             border_radius=25,
-            alignment=ft.alignment.center
+            alignment=ft.Alignment(x=0, y=0)
         )
 
         # Affichage de l'historique
@@ -121,7 +122,7 @@ def main(page: ft.Page):
             bgcolor=COLOR_SECONDARY
         )
 
-        # Bouton d'envoi sans icône
+        # Bouton d'envoi
         send_btn = ft.ElevatedButton(
             text="SEND",
             on_click=on_send_click,
@@ -129,10 +130,10 @@ def main(page: ft.Page):
             color=COLOR_BG
         )
 
-        # Assemblage final
+        # Assemblage final - Alignment centre simplifié
         page.add(
             ft.Row([ft.Text("POCKET AI", size=20, weight="bold", color=COLOR_PRIMARY)], alignment=ft.MainAxisAlignment.CENTER),
-            ft.Container(content=orb, alignment=ft.alignment.center, padding=5),
+            ft.Container(content=orb, alignment=ft.Alignment(0, 0), padding=5),
             ft.Container(content=chat_history, expand=True, border=ft.border.all(1, "#111B27"), padding=10, border_radius=10),
             ft.Row([chat_field, send_btn])
         )
