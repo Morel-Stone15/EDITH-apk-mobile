@@ -65,7 +65,7 @@ def main(page: ft.Page):
             pass
 
         # --- ÉLÉMENT VISUEL SIMPLE (Plus de crash GPU) ---
-        orb = ft.Icon(name=ft.icons.SHIELD_ROUNDED, color=COLOR_PRIMARY, size=50)
+        orb = ft.Icon(name=ft.icons.SHIELD, color=COLOR_PRIMARY, size=50)
 
         # Affichage de l'historique
         for msg in memory:
@@ -127,7 +127,7 @@ def main(page: ft.Page):
             ft.Row([ft.Text("POCKET AI", size=20, weight="bold", color=COLOR_PRIMARY)], alignment=ft.MainAxisAlignment.CENTER),
             ft.Container(content=orb, alignment=ft.alignment.center, padding=5),
             ft.Container(content=chat_history, expand=True, border=ft.border.all(1, "#111B27"), padding=10, border_radius=10),
-            ft.Row([chat_field, ft.IconButton(ft.icons.SEND_ROUNDED, icon_color=COLOR_PRIMARY, on_click=on_send_click)])
+            ft.Row([chat_field, ft.IconButton(ft.icons.SEND, icon_color=COLOR_PRIMARY, on_click=on_send_click)])
         )
 
     except Exception as e:
