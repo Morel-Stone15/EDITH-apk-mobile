@@ -5,8 +5,9 @@ import json
 import time
 
 # --- CONFIGURATION API ---
+# Correction : La version stable est gemini-1.5-flash
 GEMINI_API_KEY = "AIzaSyBpBTborM4zPEUHeCG4buAggAS_cI3jc3E"
-API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
 # --- DESIGN TOKENS ---
 COLOR_BG = "#050A10"
@@ -16,10 +17,10 @@ COLOR_TEXT = "#E0F7FA"
 
 # --- RESPONSES HORS-LIGNE (FALLBACK) ---
 OFFLINE_RESPONSES = {
-    "hello": "Système en ligne. Mode local activé (Hors-ligne).",
-    "aide": "Commandes locales : 'status', 'aide', 'clear'.",
-    "status": "Diagnostic : Batterie OK, Stockage OK, Connexion : Déconnecté.",
-    "default": "Mode Hors-ligne : Connexion internet requise pour une analyse avancée. Protocoles de base opérationnels."
+    "hello": "Système PocketAI en ligne. Mode local activé.",
+    "aide": "Commandes : status, aide, clear.",
+    "status": "État : Opérationnel. Réseau : Déconnecté.",
+    "default": "Connexion internet requise pour l'IA complète. Mode tactique local actif."
 }
 
 class Message(ft.Column):
@@ -35,11 +36,7 @@ class Message(ft.Column):
                 content=ft.Text(self.text, color=COLOR_TEXT),
                 bgcolor=COLOR_SECONDARY if not is_user else "#001A33",
                 padding=10,
-                border_radius=ft.border_radius.only(
-                    top_left=10, top_right=10, 
-                    bottom_right=0 if is_user else 10,
-                    bottom_left=10 if is_user else 0
-                ),
+                border_radius=10,
                 border=ft.border.all(1, COLOR_PRIMARY if is_user else "#FF00FF")
             )
         ]
@@ -47,49 +44,52 @@ class Message(ft.Column):
 
 def main(page: ft.Page):
     try:
+        # Configuration de base ultra-safe
         page.title = "PocketAI Tactical"
         page.bgcolor = COLOR_BG
         page.theme_mode = ft.ThemeMode.DARK
-        page.padding = 20
+        page.padding = 10
+        page.window_width = 400
+        page.window_height = 800
         
         # --- ETAT DE L'APPLICATION ---
         chat_history = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
         
         # Récupération de l'historique sécurisée
+        memory = []
         try:
             history_raw = page.client_storage.get("chat_history")
-            memory = json.loads(history_raw) if history_raw else []
+            if history_raw:
+                memory = json.loads(history_raw)
         except Exception:
-            memory = []
+            pass
 
-        # --- ANIMATION DE L'ORBE ---
-        orb = ft.Container(
-            width=80, height=80, shape=ft.BoxShape.CIRCLE,
-            gradient=ft.RadialGradient(colors=[COLOR_PRIMARY, "transparent"]),
-            shadow=ft.BoxShadow(spread_radius=5, blur_radius=15, color=COLOR_PRIMARY),
-            animate_opacity=300, opacity=0.5
-        )
+        # --- ÉLÉMENT VISUEL SIMPLE (Plus de crash GPU) ---
+        orb = ft.Icon(name=ft.icons.SHIELD_ROUNDED, color=COLOR_PRIMARY, size=50)
 
         # Affichage de l'historique
         for msg in memory:
-            role = "USER" if msg['role'] == 'user' else "AI"
-            chat_history.controls.append(Message(role, msg['parts'][0]['text'], msg['role'] == 'user'))
+            try:
+                role = "USER" if msg['role'] == 'user' else "IA"
+                chat_history.controls.append(Message(role, msg['parts'][0]['text'], msg['role'] == 'user'))
+            except:
+                pass
 
         def call_ai(prompt, history):
-            # 1. Tentative avec Gemini (Online)
             payload = {
                 "contents": history + [{"role": "user", "parts": [{"text": prompt}]}],
-                "system_instruction": {"parts": [{"text": "Tu es une IA tactique professionnelle et précise. Ton ton est neutre et efficace. Réponds brièvement."}]}
+                "system_instruction": {"parts": [{"text": "Tu es une IA tactique. Réponds brièvement."}]}
             }
             try:
-                response = requests.post(API_URL, json=payload, timeout=5)
+                # Timeout court pour éviter le gel de l'UI
+                response = requests.post(API_URL, json=payload, timeout=8)
                 if response.status_code == 200:
                     result = response.json()
                     return result['candidates'][0]['content']['parts'][0]['text']
-            except Exception:
+            except:
                 pass
             
-            # 2. Fallback Hors-ligne (Offline)
+            # Fallback
             low_prompt = prompt.lower()
             return OFFLINE_RESPONSES.get(low_prompt, OFFLINE_RESPONSES["default"])
 
@@ -99,7 +99,6 @@ def main(page: ft.Page):
             user_text = chat_field.value
             chat_field.value = ""
             chat_history.controls.append(Message("USER", user_text, True))
-            orb.opacity = 1.0 
             page.update()
             
             bot_text = call_ai(user_text, memory)
@@ -107,36 +106,39 @@ def main(page: ft.Page):
             memory.append({"role": "user", "parts": [{"text": user_text}]})
             memory.append({"role": "model", "parts": [{"text": bot_text}]})
             
-            truncated_memory = memory[-20:]
-            page.client_storage.set("chat_history", json.dumps(truncated_memory))
+            try:
+                truncated_memory = memory[-10:] # Moins de mémoire pour éviter saturation
+                page.client_storage.set("chat_history", json.dumps(truncated_memory))
+            except:
+                pass
             
-            chat_history.controls.append(Message("AI", bot_text, False))
-            orb.opacity = 0.5
+            chat_history.controls.append(Message("IA", bot_text, False))
             page.update()
 
         chat_field = ft.TextField(
-            hint_text="Entrez une commande...",
+            hint_text="Commande...",
             expand=True, border_color=COLOR_PRIMARY,
-            on_submit=on_send_click
+            on_submit=on_send_click,
+            bgcolor=COLOR_SECONDARY
         )
 
+        # Assemblage final
         page.add(
-            ft.Row([ft.Text("POCKET AI", size=24, weight="bold", color=COLOR_PRIMARY)], alignment=ft.MainAxisAlignment.CENTER),
-            ft.Divider(color="#111B27", thickness=1),
-            ft.Container(content=orb, alignment=ft.alignment.center, padding=10),
-            ft.Container(content=chat_history, expand=True, border=ft.border.all(0.5, "#111B27"), padding=10, border_radius=10),
+            ft.Row([ft.Text("POCKET AI", size=20, weight="bold", color=COLOR_PRIMARY)], alignment=ft.MainAxisAlignment.CENTER),
+            ft.Container(content=orb, alignment=ft.alignment.center, padding=5),
+            ft.Container(content=chat_history, expand=True, border=ft.border.all(1, "#111B27"), padding=10, border_radius=10),
             ft.Row([chat_field, ft.IconButton(ft.icons.SEND_ROUNDED, icon_color=COLOR_PRIMARY, on_click=on_send_click)])
         )
 
     except Exception as e:
-        # ÉCRAN DE DIAGNOSTIC (S'affiche si l'app plante au démarrage)
+        # ÉCRAN DE DIAGNOSTIC ROUGE (Si tout le reste échoue)
         page.add(ft.Container(
             content=ft.Column([
-                ft.Text("ERREUR TACTIQUE AU LANCEMENT", color="red", size=20, weight="bold"),
-                ft.Text(f"Détails : {str(e)}", color="white"),
-                ft.Text("Vérifiez les dépendances et le stockage.", color="gray")
+                ft.Text("ERREUR FATALE", color="red", size=24, weight="bold"),
+                ft.Text(f"LOG: {str(e)}", color="white"),
+                ft.Text("Veuillez réinitialiser l'application.", color="gray", size=12)
             ]),
-            bgcolor="black", expand=True, padding=50
+            bgcolor="black", expand=True, padding=20
         ))
 
 ft.app(target=main)
