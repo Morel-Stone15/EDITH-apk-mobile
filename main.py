@@ -5,7 +5,6 @@ import json
 import time
 
 # --- CONFIGURATION API ---
-# Correction : La version stable est gemini-1.5-flash
 GEMINI_API_KEY = "AIzaSyBpBTborM4zPEUHeCG4buAggAS_cI3jc3E"
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
 
@@ -15,7 +14,7 @@ COLOR_PRIMARY = "#00FFFF"
 COLOR_SECONDARY = "#1A2533"
 COLOR_TEXT = "#E0F7FA"
 
-# --- RESPONSES HORS-LIGNE (FALLBACK) ---
+# --- RESPONSES HORS-LIGNE ---
 OFFLINE_RESPONSES = {
     "hello": "Système PocketAI en ligne. Mode local activé.",
     "aide": "Commandes : status, aide, clear.",
@@ -44,28 +43,30 @@ class Message(ft.Column):
 
 def main(page: ft.Page):
     try:
-        # Configuration de base ultra-safe
         page.title = "PocketAI Tactical"
         page.bgcolor = COLOR_BG
         page.theme_mode = ft.ThemeMode.DARK
         page.padding = 10
-        page.window_width = 400
-        page.window_height = 800
         
         # --- ETAT DE L'APPLICATION ---
         chat_history = ft.Column(scroll=ft.ScrollMode.ALWAYS, expand=True)
         
-        # Récupération de l'historique sécurisée
         memory = []
         try:
             history_raw = page.client_storage.get("chat_history")
             if history_raw:
                 memory = json.loads(history_raw)
-        except Exception:
+        except:
             pass
 
-        # --- ÉLÉMENT VISUEL SIMPLE (Plus de crash GPU) ---
-        orb = ft.Icon(name=ft.icons.SHIELD, color=COLOR_PRIMARY, size=50)
+        # --- ÉLÉMENT VISUEL SANS ICÔNE (Zéro risque de crash) ---
+        orb = ft.Container(
+            content=ft.Text("AI", color=COLOR_BG, weight="bold"),
+            bgcolor=COLOR_PRIMARY,
+            width=50, height=50,
+            border_radius=25,
+            alignment=ft.alignment.center
+        )
 
         # Affichage de l'historique
         for msg in memory:
@@ -81,7 +82,6 @@ def main(page: ft.Page):
                 "system_instruction": {"parts": [{"text": "Tu es une IA tactique. Réponds brièvement."}]}
             }
             try:
-                # Timeout court pour éviter le gel de l'UI
                 response = requests.post(API_URL, json=payload, timeout=8)
                 if response.status_code == 200:
                     result = response.json()
@@ -89,7 +89,6 @@ def main(page: ft.Page):
             except:
                 pass
             
-            # Fallback
             low_prompt = prompt.lower()
             return OFFLINE_RESPONSES.get(low_prompt, OFFLINE_RESPONSES["default"])
 
@@ -107,7 +106,7 @@ def main(page: ft.Page):
             memory.append({"role": "model", "parts": [{"text": bot_text}]})
             
             try:
-                truncated_memory = memory[-10:] # Moins de mémoire pour éviter saturation
+                truncated_memory = memory[-10:]
                 page.client_storage.set("chat_history", json.dumps(truncated_memory))
             except:
                 pass
@@ -122,21 +121,29 @@ def main(page: ft.Page):
             bgcolor=COLOR_SECONDARY
         )
 
+        # Bouton d'envoi sans icône
+        send_btn = ft.ElevatedButton(
+            text="SEND",
+            on_click=on_send_click,
+            bgcolor=COLOR_PRIMARY,
+            color=COLOR_BG
+        )
+
         # Assemblage final
         page.add(
             ft.Row([ft.Text("POCKET AI", size=20, weight="bold", color=COLOR_PRIMARY)], alignment=ft.MainAxisAlignment.CENTER),
             ft.Container(content=orb, alignment=ft.alignment.center, padding=5),
             ft.Container(content=chat_history, expand=True, border=ft.border.all(1, "#111B27"), padding=10, border_radius=10),
-            ft.Row([chat_field, ft.IconButton(ft.icons.SEND, icon_color=COLOR_PRIMARY, on_click=on_send_click)])
+            ft.Row([chat_field, send_btn])
         )
 
     except Exception as e:
         # ÉCRAN DE DIAGNOSTIC ROUGE (Si tout le reste échoue)
         page.add(ft.Container(
             content=ft.Column([
-                ft.Text("ERREUR FATALE", color="red", size=24, weight="bold"),
-                ft.Text(f"LOG: {str(e)}", color="white"),
-                ft.Text("Veuillez réinitialiser l'application.", color="gray", size=12)
+                ft.Text("ERREUR CRITIQUE", color="red", size=20, weight="bold"),
+                ft.Text(f"Détails : {str(e)}", color="white"),
+                ft.Text("Veuillez réinitialiser l'application.", color="gray")
             ]),
             bgcolor="black", expand=True, padding=20
         ))
