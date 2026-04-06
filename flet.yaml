@@ -1,0 +1,16 @@
+app:
+  title: PocketAI Tactical
+  package_name: com.pocketai.tactical
+  version: 1.0.0
+
+build:
+  android:
+    permissions:
+      - INTERNET
+      - ACCESS_NETWORK_STATE
+    include_exts:
+      - py
+      - png
+      - jpg
+      - yaml
+      - txt
