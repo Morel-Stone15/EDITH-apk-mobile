@@ -1,0 +1,6 @@
+flet
+requests
+certifi
+chardet
+idna
+urllib3

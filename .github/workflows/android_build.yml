@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Flet Android APK
 
 on:
   push:
@@ -7,9 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -22,16 +20,20 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install buildozer
+          pip install flet
 
-      - name: Build with Buildozer
-        uses: digreatbrian/buildozer-action@v1
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          buildozer-cmd: buildozer android debug
-          workdir: .
+          channel: 'stable'
+
+      - name: Build APK
+        run: |
+          # Se déplacer dans le dossier mobile si nécessaire
+          flet build apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: edith-apk
-          path: bin/*.apk
+          name: edith-app-flet
+          path: build/apk/*.apk
