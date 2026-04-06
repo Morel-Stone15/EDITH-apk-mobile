@@ -23,9 +23,9 @@ jobs:
           pip install buildozer cython git+https://github.com/kivy/kivy.git
 
       - name: Build with Buildozer
-        uses: ArtemSerebrennikov/buildozer-action@v1
+        uses: digreatbrian/buildozer-action@v1
         with:
-          command: buildozer android debug
+          buildozer-cmd: buildozer android debug
           repository_root: .
 
       - name: Upload APK
