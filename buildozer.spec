@@ -11,10 +11,11 @@ requirements = python3,flet,google-generativeai,requests,certifi,chardet,idna,ur
 orientation = portrait
 fullscreen = 0
 android.permissions = INTERNET
-android.api = 31
+android.api = 34
 android.minapi = 21
-android.sdk = 31
-android.ndk = 23b
+android.sdk = 34
+android.ndk = 25b
+android.accept_sdk_license = True
 
 # (Icon & Splash)
 # icon.filename = icon.png
